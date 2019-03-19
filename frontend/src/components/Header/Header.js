@@ -1,8 +1,8 @@
 import React from 'react';
-import './Header.scss';
+import classes from './Header.module.scss';
 
 const Header = () => (
-  <div className="header">
+  <div className={classes.Header}>
     <h2>Real Chat App</h2>
   </div>
 );
