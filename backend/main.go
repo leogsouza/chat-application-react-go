@@ -8,26 +8,35 @@ import (
 )
 
 // define our WebSocket endpoint
-func serveWs(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.Host)
+func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Websocket Endpoint Hit")
 
-	// upgrade this connection to a WebSocket
-	// connection
-	ws, err := websocket.Upgrade(w, r)
+	conn, err := websocket.Upgrade(w, r)
 	if err != nil {
-		fmt.Fprintf(w, "%+V\n", err)
+		fmt.Fprintf(w, "%+v\n", err)
 	}
-	go websocket.Writer(ws)
-	websocket.Reader(ws)
+
+	client := &websocket.Client{
+		Conn: conn,
+		Pool: pool,
+	}
+
+	pool.Register <- client
+	client.Read()
+
 }
 
 func setupRoutes() {
-	// map our `/ws` endpoint to the `serveWs` function
-	http.HandleFunc("/ws", serveWs)
+	pool := websocket.NewPool()
+	go pool.Start()
+
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		serveWs(pool, w, r)
+	})
 }
 
 func main() {
-	fmt.Println("Chat App v0.0.1")
+	fmt.Println("Distribuited Chat App v0.0.1")
 	setupRoutes()
 	http.ListenAndServe(":8080", nil)
 }
